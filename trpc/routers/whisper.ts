@@ -47,7 +47,9 @@ export const whisperRouter = t.router({
 
         console.log("decreasing of minutes", minutes);
         console.log("Audio URL:", input.audioUrl);
-        console.log("Together API key present:", !!ctx.togetherApiKey);
+        console.log("Together API key from context:", !!ctx.togetherApiKey);
+        console.log("Together API key from env:", !!process.env.TOGETHER_API_KEY);
+        console.log("Together API key env value:", process.env.TOGETHER_API_KEY?.substring(0, 10) + "...");
 
         const limitResult = await limitMinutes({
           clerkUserId: ctx.auth.userId,

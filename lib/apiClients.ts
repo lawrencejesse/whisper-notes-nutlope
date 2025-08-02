@@ -29,8 +29,13 @@ export function togetherVercelAiClient(apiKey?: string) {
 }
 
 export function togetherBaseClientWithKey(apiKey?: string) {
+  const finalApiKey = apiKey || process.env.TOGETHER_API_KEY;
+  console.log("API Client - received key:", !!apiKey);
+  console.log("API Client - env key:", !!process.env.TOGETHER_API_KEY);
+  console.log("API Client - final key:", !!finalApiKey);
+  
   const baseSDKOptions: ConstructorParameters<typeof Together>[0] = {
-    apiKey: apiKey || process.env.TOGETHER_API_KEY,
+    apiKey: finalApiKey,
   };
 
   if (process.env.HELICONE_API_KEY) {

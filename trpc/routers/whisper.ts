@@ -46,10 +46,6 @@ export const whisperRouter = t.router({
         const minutes = Math.ceil(input.durationSeconds / 60);
 
         console.log("decreasing of minutes", minutes);
-        console.log("Audio URL:", input.audioUrl);
-        console.log("Together API key from context:", !!ctx.togetherApiKey);
-        console.log("Together API key from env:", !!process.env.TOGETHER_API_KEY);
-        console.log("Together API key env value:", process.env.TOGETHER_API_KEY?.substring(0, 10) + "...");
 
         const limitResult = await limitMinutes({
           clerkUserId: ctx.auth.userId,
@@ -61,7 +57,6 @@ export const whisperRouter = t.router({
           throw new Error("You have exceeded your daily audio minutes limit.");
         }
 
-        console.log("Starting Together API transcription...");
         const res = await togetherBaseClientWithKey(
           ctx.togetherApiKey
         ).audio.transcriptions.create({
@@ -70,73 +65,67 @@ export const whisperRouter = t.router({
           model: "openai/whisper-large-v3",
           language: input.language || "en",
         });
-        console.log("Transcription completed successfully");
 
-      const transcription = res.text as string;
-      console.log("Transcription result:", transcription?.substring(0, 100) + "...");
+        const transcription = res.text as string;
 
-      // Generate a title from the transcription (first 8 words or fallback)
-      console.log("Starting title generation...");
-      const { text: title } = await generateText({
-        prompt: `Generate a title for the following transcription with max of 10 words/80 characters: 
+        // Generate a title from the transcription (first 8 words or fallback)
+        const { text: title } = await generateText({
+          prompt: `Generate a title for the following transcription with max of 10 words/80 characters: 
         ${transcription}
         
         Only return the title, nothing else, no explanation and no quotes or followup.
         `,
-        model: togetherVercelAiClient(ctx.togetherApiKey)(
-          "meta-llama/Llama-3.3-70B-Instruct-Turbo"
-        ),
-        maxTokens: 10,
-      });
-      console.log("Title generated:", title);
+          model: togetherVercelAiClient(ctx.togetherApiKey)(
+            "meta-llama/Llama-3.3-70B-Instruct-Turbo"
+          ),
+          maxTokens: 10,
+        });
 
-      const whisperId = input.whisperId || uuidv4();
+        const whisperId = input.whisperId || uuidv4();
 
-      console.log("Starting database operations...");
-      if (input.whisperId) {
-        // Add AudioTrack to existing Whisper
-        const whisper = await prisma.whisper.findUnique({
-          where: { id: input.whisperId },
-        });
-        if (!whisper) throw new Error("Whisper not found");
-        // Create new AudioTrack
-        await prisma.audioTrack.create({
-          data: {
-            fileUrl: input.audioUrl,
-            partialTranscription: transcription,
-            whisperId: input.whisperId,
-            language: input.language,
-          },
-        });
-        // Append to fullTranscription
-        await prisma.whisper.update({
-          where: { id: input.whisperId },
-          data: {
-            fullTranscription: whisper.fullTranscription + "\n" + transcription,
-          },
-        });
-      } else {
-        // Create new Whisper and first AudioTrack
-        await prisma.whisper.create({
-          data: {
-            id: whisperId,
-            title: title.slice(0, 80),
-            userId: ctx.auth.userId,
-            fullTranscription: transcription,
-            audioTracks: {
-              create: [
-                {
-                  fileUrl: input.audioUrl,
-                  partialTranscription: transcription,
-                  language: input.language,
-                },
-              ],
+        if (input.whisperId) {
+          // Add AudioTrack to existing Whisper
+          const whisper = await prisma.whisper.findUnique({
+            where: { id: input.whisperId },
+          });
+          if (!whisper) throw new Error("Whisper not found");
+          // Create new AudioTrack
+          await prisma.audioTrack.create({
+            data: {
+              fileUrl: input.audioUrl,
+              partialTranscription: transcription,
+              whisperId: input.whisperId,
+              language: input.language,
             },
-          },
-        });
-      }
-      console.log("Database operations completed successfully");
-      return { id: whisperId };
+          });
+          // Append to fullTranscription
+          await prisma.whisper.update({
+            where: { id: input.whisperId },
+            data: {
+              fullTranscription: whisper.fullTranscription + "\n" + transcription,
+            },
+          });
+        } else {
+          // Create new Whisper and first AudioTrack
+          await prisma.whisper.create({
+            data: {
+              id: whisperId,
+              title: title.slice(0, 80),
+              userId: ctx.auth.userId,
+              fullTranscription: transcription,
+              audioTracks: {
+                create: [
+                  {
+                    fileUrl: input.audioUrl,
+                    partialTranscription: transcription,
+                    language: input.language,
+                  },
+                ],
+              },
+            },
+          });
+        }
+        return { id: whisperId };
       } catch (error) {
         console.error("Transcription error:", error);
         throw error;

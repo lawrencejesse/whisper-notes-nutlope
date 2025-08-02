@@ -41,33 +41,40 @@ export const whisperRouter = t.router({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // Enforce minutes limit
-      const minutes = Math.ceil(input.durationSeconds / 60);
+      try {
+        // Enforce minutes limit
+        const minutes = Math.ceil(input.durationSeconds / 60);
 
-      console.log("decreasing of minutes", minutes);
+        console.log("decreasing of minutes", minutes);
+        console.log("Audio URL:", input.audioUrl);
+        console.log("Together API key present:", !!ctx.togetherApiKey);
 
-      const limitResult = await limitMinutes({
-        clerkUserId: ctx.auth.userId,
-        isBringingKey: !!ctx.togetherApiKey,
-        minutes,
-      });
+        const limitResult = await limitMinutes({
+          clerkUserId: ctx.auth.userId,
+          isBringingKey: !!ctx.togetherApiKey,
+          minutes,
+        });
 
-      if (!limitResult.success) {
-        throw new Error("You have exceeded your daily audio minutes limit.");
-      }
+        if (!limitResult.success) {
+          throw new Error("You have exceeded your daily audio minutes limit.");
+        }
 
-      const res = await togetherBaseClientWithKey(
-        ctx.togetherApiKey
-      ).audio.transcriptions.create({
-        // @ts-ignore: Together API accepts file URL as string, even if types do not allow
-        file: input.audioUrl,
-        model: "openai/whisper-large-v3",
-        language: input.language || "en",
-      });
+        console.log("Starting Together API transcription...");
+        const res = await togetherBaseClientWithKey(
+          ctx.togetherApiKey
+        ).audio.transcriptions.create({
+          // @ts-ignore: Together API accepts file URL as string, even if types do not allow
+          file: input.audioUrl,
+          model: "openai/whisper-large-v3",
+          language: input.language || "en",
+        });
+        console.log("Transcription completed successfully");
 
       const transcription = res.text as string;
+      console.log("Transcription result:", transcription?.substring(0, 100) + "...");
 
       // Generate a title from the transcription (first 8 words or fallback)
+      console.log("Starting title generation...");
       const { text: title } = await generateText({
         prompt: `Generate a title for the following transcription with max of 10 words/80 characters: 
         ${transcription}
@@ -79,9 +86,11 @@ export const whisperRouter = t.router({
         ),
         maxTokens: 10,
       });
+      console.log("Title generated:", title);
 
       const whisperId = input.whisperId || uuidv4();
 
+      console.log("Starting database operations...");
       if (input.whisperId) {
         // Add AudioTrack to existing Whisper
         const whisper = await prisma.whisper.findUnique({
@@ -124,7 +133,12 @@ export const whisperRouter = t.router({
           },
         });
       }
+      console.log("Database operations completed successfully");
       return { id: whisperId };
+      } catch (error) {
+        console.error("Transcription error:", error);
+        throw error;
+      }
     }),
   getWhisperWithTracks: protectedProcedure
     .input(z.object({ id: z.string() }))

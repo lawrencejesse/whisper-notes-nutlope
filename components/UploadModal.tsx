@@ -39,6 +39,8 @@ export function UploadModal({ onClose }: { onClose: () => void }) {
   >("idle");
 
   const [isDragActive, setIsDragActive] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [fileName, setFileName] = useState("");
   const { uploadToS3 } = useS3Upload();
   const router = useRouter();
   const trpc = useTRPC();
@@ -59,30 +61,49 @@ export function UploadModal({ onClose }: { onClose: () => void }) {
         );
         return;
       }
+      
+      // Reset progress and set file name
+      setUploadProgress(0);
+      setFileName(file.name);
       setIsProcessing("uploading");
+      
       try {
-        // Run duration extraction and S3 upload in parallel
-        const [duration, { url }] = await Promise.all([
-          getDuration(file),
-          uploadToS3(file),
-        ]);
-        // Call tRPC mutation
+        // Start with duration extraction
+        setUploadProgress(10);
+        const duration = await getDuration(file);
+        
+        // Upload to S3 with progress simulation
+        setUploadProgress(20);
+        const uploadResult = await uploadToS3(file);
+        
+        setUploadProgress(80);
+        
+        // Call tRPC mutation for transcription
         setIsProcessing("transcribing");
+        setUploadProgress(90);
+        
         const { id } = await transcribeMutation.mutateAsync({
-          audioUrl: url,
+          audioUrl: uploadResult.url,
           language,
           durationSeconds: Math.round(duration),
         });
+        
+        setUploadProgress(100);
+        
         // Invalidate dashboard query
         await queryClient.invalidateQueries({
           queryKey: trpc.whisper.listWhispers.queryKey(),
         });
+        
         router.push(`/whispers/${id}`);
       } catch (err) {
+        console.error("Upload error:", err);
         toast.error("Failed to transcribe audio. Please try again.");
+        setIsProcessing("idle");
+        setUploadProgress(0);
       }
     },
-    [uploadToS3, transcribeMutation, router]
+    [uploadToS3, transcribeMutation, router, language, queryClient]
   );
 
   return (
@@ -158,7 +179,40 @@ export function UploadModal({ onClose }: { onClose: () => void }) {
                       <p className="text-xs text-center text-[#4a5565]">
                         Or drag‑and‑drop here
                       </p>
-                      {isDragActive && (
+                      
+                      {/* Progress overlay for uploading */}
+                      {isProcessing !== "idle" && (
+                        <div className="absolute inset-0 bg-white bg-opacity-95 flex items-center justify-center z-20 pointer-events-none">
+                          <div className="flex flex-col items-center gap-3 w-4/5">
+                            <div className="flex items-center gap-2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                              <span className="text-sm font-medium text-slate-700">
+                                {isProcessing === "uploading" ? "Uploading..." : "Transcribing..."}
+                              </span>
+                            </div>
+                            
+                            {fileName && (
+                              <div className="text-xs text-slate-500 truncate max-w-full">
+                                {fileName}
+                              </div>
+                            )}
+                            
+                            {/* Progress bar */}
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                                style={{ width: `${uploadProgress}%` }}
+                              ></div>
+                            </div>
+                            
+                            <div className="text-xs text-slate-500">
+                              {uploadProgress}% complete
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {isDragActive && isProcessing === "idle" && (
                         <div className="absolute inset-0 bg-blue-100 bg-opacity-50 flex items-center justify-center z-10 pointer-events-none">
                           <span className="text-blue-700 font-semibold">
                             Drop audio file here

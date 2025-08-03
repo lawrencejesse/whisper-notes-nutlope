@@ -4,13 +4,14 @@ import { streamText } from "ai";
 import { togetherVercelAiClient } from "@/lib/apiClients";
 import { RECORDING_TYPES } from "@/lib/utils";
 import { getAuth } from "@clerk/nextjs/server";
+import { getBuiltInTemplate, isBuiltInTemplate } from "@/lib/builtInTemplates";
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   const prisma = new PrismaClient();
   const body = await req.json();
-  const { whisperId, typeName } = body;
+  const { whisperId, typeName, templateId } = body;
   // Auth
   const auth = getAuth(req);
   if (!auth || !auth.userId) {
@@ -29,42 +30,62 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  // Create transformation in DB
+  // Determine which template to use and get the prompt text
+  let templateName = "";
+  let promptInstruction = "";
+
+  if (templateId) {
+    // Using a custom template
+    const customTemplate = await prisma.promptTemplate.findFirst({
+      where: { 
+        id: templateId,
+        userId: auth.userId  // Ensure user can only access their own templates
+      }
+    });
+    
+    if (!customTemplate) {
+      return new Response(JSON.stringify({ error: "Template not found or access denied" }), {
+        status: 404,
+      });
+    }
+    
+    templateName = customTemplate.name;
+    promptInstruction = customTemplate.prompt;
+  } else if (typeName && isBuiltInTemplate(typeName)) {
+    // Using a built-in template
+    const builtInTemplate = getBuiltInTemplate(typeName);
+    if (!builtInTemplate) {
+      return new Response(JSON.stringify({ error: "Built-in template not found" }), {
+        status: 404,
+      });
+    }
+    
+    templateName = builtInTemplate.name;
+    promptInstruction = builtInTemplate.prompt;
+  } else {
+    return new Response(JSON.stringify({ error: "Either templateId or valid typeName is required" }), {
+      status: 400,
+    });
+  }
+
+  // Create transformation in DB (store the template name used)
   const transformation = await prisma.transformation.create({
     data: {
       whisperId,
-      typeName,
+      typeName: templateId ? templateName : typeName, // Store template name for custom templates
       text: "",
       isGenerating: true,
     },
   });
 
-  // Prepare prompt
-  const typeFullName =
-    RECORDING_TYPES.find((t) => t.value === typeName)?.name || typeName;
-
+  // Prepare the full prompt for the LLM
   const prompt = `
-  You are a helpful assistant. You will be given a transcription of an audio recording and you will generate a ${typeFullName} based on the transcription with markdown formatting. 
+  You are a helpful assistant. You will be given a transcription of an audio recording and you will generate a ${templateName} based on the transcription with markdown formatting. 
   Only output the generation itself, with no introductions, explanations, or extra commentary.
   
   The transcription is: ${whisper.fullTranscription}
 
-  ${(() => {
-    switch (typeName) {
-      case "summary":
-        return "Return a summary of the transcription with a maximum of 100 words.";
-      case "quick-note":
-        return "Return a quick post it style note.";
-      case "list":
-        return "Return a list of bullet points of the transcription main  points.";
-      case "blog":
-        return "Return the Markdown of entire blog post with subheadings";
-      case "email":
-        return "If type is email also generate an email subject line and a short email body with introductory paragraph and a closing paragraph for thanking  the reader for reading.";
-      default:
-        return "";
-    }
-  })()}
+  ${promptInstruction}
 
   Remember to use output language like the input transcription language.
 

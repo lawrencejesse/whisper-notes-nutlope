@@ -45,3 +45,12 @@ model AudioTrack {
   whisperId            String
   language             String? // Added for language selection
 }
+
+model PromptTemplate {
+  id        String   @id @default(uuid())
+  userId    String   // Links to the user who created this template
+  name      String   // Display name for the template (e.g., "My Custom Email Style")
+  prompt    String   // The actual prompt text that gets sent to the LLM
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

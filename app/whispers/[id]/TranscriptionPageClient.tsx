@@ -7,6 +7,7 @@ import { formatWhisperTimestamp, RECORDING_TYPES } from "@/lib/utils";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { TransformDropdown } from "@/components/TransformDropdown";
+import { TemplateEditorModal } from "@/components/TemplateEditorModal";
 import { toast } from "sonner";
 import { AutosizeTextarea } from "@/components/ui/AutoSizeTextArea";
 import {
@@ -49,6 +50,8 @@ export default function TranscriptionPageClient({ id }: { id: string }) {
   const { apiKey } = useTogetherApiKey();
   const [streamingText, setStreamingText] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const [templateRefreshTrigger, setTemplateRefreshTrigger] = useState(0);
   const { transformationsData, isLoading: isLimitsLoading } = useLimits();
 
   // Helper: get all transformations from server only
@@ -113,7 +116,7 @@ export default function TranscriptionPageClient({ id }: { id: string }) {
   };
 
   // Handler for creating a transformation (streaming)
-  const handleTransform = async (typeName: string) => {
+  const handleTransform = async (data: { typeName?: string; templateId?: string }) => {
     setIsStreaming(true);
     setStreamingText("");
     let newId: string | null = null;
@@ -124,7 +127,11 @@ export default function TranscriptionPageClient({ id }: { id: string }) {
           "Content-Type": "application/json",
           ...(apiKey ? { TogetherAPIToken: apiKey } : {}),
         },
-        body: JSON.stringify({ whisperId: id, typeName }),
+        body: JSON.stringify({ 
+          whisperId: id, 
+          ...(data.typeName && { typeName: data.typeName }),
+          ...(data.templateId && { templateId: data.templateId })
+        }),
       });
       if (!res.body) throw new Error("No response body");
       const reader = res.body.getReader();
@@ -403,7 +410,9 @@ export default function TranscriptionPageClient({ id }: { id: string }) {
       <footer className="fixed bottom-0 left-0 w-full md:left-1/2 md:-translate-x-1/2 bg-white border-t md:border md:rounded-2xl border-slate-200 px-4 py-3 flex flex-col md:flex-row items-center z-50 max-w-[730px] gap-2 justify-center md:mb-4">
         <TransformDropdown
           onTransform={handleTransform}
+          onManageTemplates={() => setIsTemplateModalOpen(true)}
           isStreaming={isStreaming}
+          refreshTrigger={templateRefreshTrigger}
         />
         <div className="flex gap-2 w-full md:flex-row max-w-md md:max-w-auto justify-between items-center">
           {/* <button
@@ -439,6 +448,16 @@ export default function TranscriptionPageClient({ id }: { id: string }) {
           </Link>
         </div>
       </footer>
+
+      {/* Template Editor Modal */}
+      <TemplateEditorModal
+        isOpen={isTemplateModalOpen}
+        onClose={() => setIsTemplateModalOpen(false)}
+        onTemplatesUpdated={() => {
+          // Trigger the TransformDropdown to refetch templates
+          setTemplateRefreshTrigger(prev => prev + 1);
+        }}
+      />
     </div>
   );
 }

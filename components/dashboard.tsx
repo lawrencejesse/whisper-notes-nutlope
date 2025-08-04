@@ -132,7 +132,7 @@ export function Dashboard({ transcriptions }: DashboardProps) {
                   <div key={transcription.id} className="relative w-full">
                     <Link
                       href={`/whispers/${transcription.id}`}
-                      className="self-stretch flex-grow-0 flex-shrink-0 h-[121px] overflow-hidden group border-t-0 border-r-0 border-b-[0.7px] border-l-0 border-gray-200 md:border-[0.7px] md:border-transparent md:rounded-xl focus-within:bg-gray-50 focus-within:border-[#d1d5dc] hover:bg-gray-50 hover:border-[#d1d5dc] transition-all flex flex-col justify-between px-6 py-4 pr-14"
+                      className="self-stretch flex-grow-0 flex-shrink-0 h-[121px] overflow-hidden group border-t-0 border-r-0 border-b-[0.7px] border-l-0 border-gray-200 md:border-[0.7px] md:border-transparent md:rounded-xl focus-within:bg-blue-50 focus-within:border-blue-200 hover:bg-blue-50 hover:border-blue-200 transition-all flex flex-col justify-between px-6 py-4 pr-14"
                       tabIndex={0}
                     >
                       <p className="text-base font-medium text-left text-[#101828] mb-2">
@@ -172,7 +172,7 @@ export function Dashboard({ transcriptions }: DashboardProps) {
                   <Link
                     href={`/whispers/${transcription.id}`}
                     key={transcription.id}
-                    className="self-stretch flex-grow-0 flex-shrink-0 h-[121px] overflow-hidden group border-t-0 border-r-0 border-b-[0.7px] border-l-0 border-gray-200 md:border-[0.7px] md:border-transparent md:rounded-xl focus-within:bg-gray-50 focus-within:border-[#d1d5dc] hover:bg-gray-50 hover:border-[#d1d5dc] transition-all flex flex-col justify-between px-6 py-4"
+                    className="self-stretch flex-grow-0 flex-shrink-0 h-[121px] overflow-hidden group border-t-0 border-r-0 border-b-[0.7px] border-l-0 border-gray-200 md:border-[0.7px] md:border-transparent md:rounded-xl focus-within:bg-blue-50 focus-within:border-blue-200 hover:bg-blue-50 hover:border-blue-200 transition-all flex flex-col justify-between px-6 py-4"
                     tabIndex={0}
                   >
                     <p className="text-base font-medium text-left text-[#101828] mb-2">
@@ -198,7 +198,7 @@ export function Dashboard({ transcriptions }: DashboardProps) {
               variant="outline"
               size="lg"
               onClick={handleUploadVoiceNote}
-              className="w-full rounded-lg bg-gray-100 border border-[#d1d5dc] text-base h-[42px]"
+              className="w-full rounded-lg bg-blue-50 border border-blue-200 text-base h-[42px] hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-colors"
             >
               <img src="/upload.svg" className="w-5 h-5 size-5" />
               Upload Voice Note

@@ -1,6 +1,6 @@
 export const Footer = () => {
   return (
-    <div className="flex flex-col md:flex-row justify-between gap-2 px-4 py-[9px] items-center">
+    <div className="flex flex-col md:flex-row justify-between gap-2 px-4 py-[9px] items-center bg-blue-100 border-t-4 border-blue-500">
       <p className="text-xs text-center">
         <span className="text-xs text-center text-[#99a1af]">Powered by </span>
         <a
@@ -24,13 +24,13 @@ export const Footer = () => {
 
       <div className="flex flex-row gap-2">
         <a
-          href="https://github.com/nutlope/whisper-app"
+          href="https://github.com/lawrencejesse"
           target="_blank"
           rel="noopenner"
         >
           <img src="/github.svg" alt="GitHub" className="h-5 w-5" />
         </a>
-        <a href="https://x.com/nutlope" target="_blank" rel="noopenner">
+        <a href="https://x.com/lawrencejessej" target="_blank" rel="noopenner">
           <img src="/twitter.svg" alt="Twitter" className="h-5 w-5" />
         </a>
       </div>

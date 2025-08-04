@@ -39,7 +39,7 @@ export default function RootLayout({
               <PlausibleProvider domain="usewhisper.io" />
             </head>
             <body className={`${raleway.variable} antialiased`}>
-              <div className="min-h-screen bg-white flex flex-col">
+              <div className="min-h-screen bg-gradient-to-br from-white to-slate-50 flex flex-col">
                 <Header />
                 {children}
                 <Toaster richColors />

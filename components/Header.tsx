@@ -38,12 +38,12 @@ export function Header() {
   if (!mounted) {
     // Optionally, you can return a skeleton or null while mounting
     return (
-      <div className="h-[63px] w-full bg-gray-50 border-b border-gray-200" />
+      <div className="h-[63px] w-full bg-blue-50/30 border-b border-blue-100" />
     );
   }
 
   return (
-    <header className="min-h-[63px] flex items-center justify-between p-4 bg-gray-50 border-b border-gray-200">
+    <header className="min-h-[63px] flex items-center justify-between p-4 bg-blue-50/30 border-b border-blue-100">
       {isSingleWhisperPage ? (
         <Link href="/whispers/" className="flex items-center gap-2">
           <img
@@ -78,7 +78,7 @@ export function Header() {
         </SignedOut>
         <SignedIn>
           <Button
-            className="w-[51px] h-[30px] relative rounded-lg bg-white hover:bg-gray-50 border-[0.5px] border-gray-200"
+            className="w-[51px] h-[30px] relative rounded-lg bg-white hover:bg-blue-50 border-[0.5px] border-blue-200"
             onClick={() => {
               if (isBYOK) {
                 toast("You have unlimited transformations for your whispers!");
@@ -132,7 +132,7 @@ function KeyButton() {
   return (
     <Button
       variant="ghost"
-      className="p-[7px] size-[30px] min-w-[30px] min-h-[30px] rounded-lg border border-gray-200 bg-white hover:bg-gray-50"
+      className="p-[7px] size-[30px] min-w-[30px] min-h-[30px] rounded-lg border border-blue-200 bg-white hover:bg-blue-50"
       onClick={handleClick}
     >
       <img src="/key.svg" className="min-w-4 min-h-4 size-4" />

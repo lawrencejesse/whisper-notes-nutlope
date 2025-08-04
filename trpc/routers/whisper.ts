@@ -42,6 +42,12 @@ export const whisperRouter = t.router({
     )
     .mutation(async ({ input, ctx }) => {
       try {
+        console.log("transcribeFromS3 called with:", { 
+          audioUrl: input.audioUrl, 
+          durationSeconds: input.durationSeconds,
+          hasApiKey: !!ctx.togetherApiKey 
+        });
+        
         // Enforce minutes limit
         const minutes = Math.ceil(input.durationSeconds / 60);
 
@@ -57,6 +63,7 @@ export const whisperRouter = t.router({
           throw new Error("You have exceeded your daily audio minutes limit.");
         }
 
+        console.log("Calling Together API for transcription...");
         const res = await togetherBaseClientWithKey(
           ctx.togetherApiKey
         ).audio.transcriptions.create({
@@ -66,6 +73,7 @@ export const whisperRouter = t.router({
           language: input.language || "en",
         });
 
+        console.log("Transcription received:", res.text ? "Success" : "No text");
         const transcription = res.text as string;
 
         // Generate a title from the transcription (first 8 words or fallback)
@@ -128,6 +136,11 @@ export const whisperRouter = t.router({
         return { id: whisperId };
       } catch (error) {
         console.error("Transcription error:", error);
+        console.error("Error details:", {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
         throw error;
       }
     }),

@@ -1,0 +1,21 @@
+[
+    {
+        "AllowedHeaders": [
+            "*"
+        ],
+        "AllowedMethods": [
+            "GET",
+            "PUT",
+            "POST",
+            "DELETE",
+            "HEAD"
+        ],
+        "AllowedOrigins": [
+            "https://whisper-notes-nutlope.vercel.app",
+            "http://localhost:3000"
+        ],
+        "ExposeHeaders": [
+            "ETag"
+        ]
+    }
+] 
